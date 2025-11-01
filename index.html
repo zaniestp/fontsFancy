@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fancy Font Generator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Custom styles for the app */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for the generated text to make it selectable */
+        .generated-text {
+            user-select: all;
+            word-break: break-all;
+            /* text-xl */
+            font-size: 1.25rem; 
+            line-height: 1.75rem;
+        }
+        /* Custom toast notification for copy feedback */
+        #copy-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(10rem); /* Start off-screen */
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 0;
+        }
+        #copy-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        /* Style for the title of each card */
+        .style-title {
+            /* text-lg */
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+            font-weight: 600; /* semibold */
+            color: #1f2937; /* text-gray-800 */
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl mx-auto">
+        <div class="bg-white shadow-xl rounded-lg p-6 md:p-10">
+            
+            <!-- Header -->
+            <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">
+                Fancy Font Generator
+            </h1>
+            <p class="text-center text-gray-500 mb-6">
+                Type in the box below to see the magic happen!
+            </p>
+
+            <!-- Input Textarea -->
+            <div class="mb-6">
+                <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">Your Text</label>
+                <textarea
+                    id="text-input"
+                    rows="4"
+                    class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                    placeholder="Type something here..."
+                ></textarea>
+            </div>
+
+            <!-- Output Container -->
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Your Styles</h2>
+            <div id="output-container" class="space-y-4">
+                <!-- Generated styles will be injected here by JavaScript -->
+                <p class="text-gray-400">Your generated font styles will appear here...</p>
+            </div>
+
+        </div>
+        
+        <!-- NEW: Credits Trigger -->
+        <div class="text-center mt-4">
+            <button id="show-credits-btn" class="text-sm text-gray-500 hover:text-gray-700 hover:underline">
+                Credits
+            </button>
+        </div>
+        
+    </div>
+
+    <!-- Copy Success Toast Notification -->
+    <div id="copy-toast" class="bg-gray-900 text-white py-2 px-4 rounded-full shadow-lg">
+        Copied to clipboard!
+    </div>
+
+    <!-- NEW: Credit Modal -->
+    <div id="credit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="z-index: 50;">
+        <div class="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-lg bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Enjoying the app?</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        If you like this app, please feel free to leave feedback at:
+                        <a href="https://github.com/zaniestp" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">
+                            https://github.com/zaniestp
+                        </a>
+                    </p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button
+                        id="close-modal-btn"
+                        class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    >
+                        Ok, I'll do
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Unicode Mappings ---
+        
+        // Maps for letters (uppercase, lowercase) and numbers
+        const fontMaps = {
+            'bold': {
+                'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜', 'J': '𝗝', 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧', 'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
+                'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶', 'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿', 's': '𝘀', 't': '𝘁', 'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
+                '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰', '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵'
+            },
+            'italic': {
+                'A': '𝘈', 'B': '𝘉', 'C': '𝘊', 'D': '𝘋', 'E': '𝘌', 'F': '𝘍', 'G': '𝘎', 'H': '𝘏', 'I': '𝘐', 'J': '𝘑', 'K': '𝘒', 'L': '𝘓', 'M': '𝘔', 'N': '𝘕', 'O': '𝘖', 'P': '𝘗', 'Q': '𝘘', 'R': '𝘙', 'S': '𘚐', 'T': '𝘛', 'U': '𝘜', 'V': '𝘝', 'W': '𝘞', 'X': '𝘟', 'Y': '𝘠', 'Z': '𝘡',
+                'a': '𝘢', 'b': '𝘣', 'c': '𝘤', 'd': '𝘥', 'e': '𝘦', 'f': '𝘧', 'g': '𝘨', 'h': '𝘩', 'i': '𝘪', 'j': '𝘫', 'k': '𝘬', 'l': '𝘭', 'm': '𝘮', 'n': '𝘯', 'o': '𝘰', 'p': '𝘱', 'q': '𝘲', 'r': '𝘳', 's': '𝘴', 't': '𝘵', 'u': '𝘶', 'v': '𝘷', 'w': '𝘸', 'x': '𝘹', 'y': '𝘺', 'z': '𝘻'
+            },
+            'boldItalic': {
+                'A': '𝘼', 'B': '𝘽', 'C': '𝘾', 'D': '𝘿', 'E': '𝙀', 'F': '𝙁', 'G': '𝙂', 'H': '𝙃', 'I': '𝙄', 'J': '𝙅', 'K': '𝙆', 'L': '𝙇', 'M': '𝙈', 'N': '𝙉', 'O': '𝙊', 'P': '𝙋', 'Q': '𝙌', 'R': '𝙍', 'S': '𝙎', 'T': '𝙏', 'U': '𝙐', 'V': '𝙑', 'W': '𝙒', 'X': '𝙓', 'Y': '𝙔', 'Z': '𝙕',
+                'a': '𝙖', 'b': '𝙗', 'c': '𝙘', 'd': '𝙙', 'e': '𝙚', 'f': '𝙛', 'g': '𝙜', 'h': '𝙝', 'i': '𝙞', 'j': '𝙟', 'k': '𝙠', 'l': '𝙡', 'm': '𝙢', 'n': '𝙣', 'o': '𝙤', 'p': '𝙥', 'q': '𝙦', 'r': '𝙧', 's': '𝙨', 't': '𝙩', 'u': '𝙪', 'v': '𝙫', 'w': '𝙬', 'x': '𝙭', 'y': '𝙮', 'z': '𝙯'
+            },
+            'script': {
+                'A': '𝒜', 'B': 'ℬ', 'C': '𝒞', 'D': '𝒟', 'E': 'ℰ', 'F': 'ℱ', 'G': '𝒢', 'H': 'ℋ', 'I': 'ℐ', 'J': 'mathcal{J}', 'K': '𝒦', 'L': 'ℒ', 'M': 'ℳ', 'N': '𝒩', 'O': '𝒪', 'P': '𝒫', 'Q': '𝒬', 'R': 'ℛ', 'S': '𝒮', 'T': '𝒯', 'U': '𝒰', 'V': '𝒱', 'W': '𝒲', 'X': '𝒳', 'Y': '𝒴', 'Z': '𝒵',
+                'a': '𝒶', 'b': '𝒷', 'c': '𝒸', 'd': '𝒹', 'e': 'ℯ', 'f': '𝒻', 'g': 'ℊ', 'h': '𝒽', 'i': '𝒾', 'j': '𝒿', 'k': '𝓀', 'l': '𝓁', 'm': '𝓂', 'n': '𝓃', 'o': 'ℴ', 'p': '𝓅', 'q': '𝓆', 'r': '𝓇', 's': '𝓈', 't': '𝓉', 'u': '𝓊', 'v': '𝓋', 'w': '𝓌', 'x': '𝓍', 'y': '𝓎', 'z': '𝓏'
+            },
+            'fraktur': {
+                'A': '𝔄', 'B': '𝔅', 'C': 'ℭ', 'D': '𝔇', 'E': '𝔈', 'F': '𝔉', 'G': '𝔊', 'H': 'ℌ', 'I': 'ℑ', 'J': '𝔍', 'K': '𝔎', 'L': '𝔏', 'M': '𝔐', 'N': '𝔑', 'O': '𝔒', 'P': '𝔓', 'Q': '𝔔', 'R': 'ℜ', 'S': '𝔖', 'T': '𝔗', 'U': '𝔘', 'V': '𝔙', 'W': '𝔚', 'X': '𝔛', 'Y': '𝔜', 'Z': 'ℨ',
+                'a': '𝔞', 'b': '𝔟', 'c': '𝔠', 'd': '𝔡', 'e': '𝔢', 'f': '𝔣', 'g': '𝔤', 'h': '𝔥', 'i': '𝔦', 'j': '𝔧', 'k': '𝔨', 'l': '𝔩', 'm': '𝔪', 'n': '𝔫', 'o': '𝔬', 'p': '𝔭', 'q': '𝔮', 'r': '𝔯', 's': '𝔰', 't': '𝔱', 'u': '𝔲', 'v': '𝔳', 'w': '𝔴', 'x': '𝔵', 'y': '𝔶', 'z': 'Z'
+            },
+            'monospace': {
+                'A': '𝙰', 'B': '𝙱', 'C': '𝙲', 'D': '𝙳', 'E': '𝙴', 'F': '𝙵', 'G': '𝙶', 'H': '𝙷', 'I': '𝙸', 'J': '𝙹', 'K': '𝙺', 'L': '𝙻', 'M': '𝙼', 'N': '𝙽', 'O': '𝙾', 'P': '𝙿', 'Q': '𝚀', 'R': '𝚁', 'S': '𝚂', 'T': '𝚃', 'U': '𝚄', 'V': '𝚅', 'W': '𝚆', 'X': '𝚇', 'Y': '𝚈', 'Z': '𝚉',
+                'a': '𝚊', 'b': '𝚋', 'c': '𝚌', 'd': '𝚍', 'e': '𝚎', 'f': '𝚏', 'g': '𝚐', 'h': '𝚑', 'i': '𝚒', 'j': '𝚓', 'k': '𝚔', 'l': '𝚕', 'm': '𝚖', 'n': '𝚗', 'o': '𝚘', 'p': '𝚙', 'q': '𝚚', 'r': '𝚛', 's': '𝚜', 't': '𝚝', 'u': '𝚞', 'v': '𝚟', 'w': '𝚠', 'x': '𝚡', 'y': '𝚢', 'z': '𝚣',
+                '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿'
+            },
+            'doublestruck': {
+                'A': '𝔸', 'B': '𝔹', 'C': 'ℂ', 'D': '𝔻', 'E': '𝔼', 'F': '𝔽', 'G': '𝔾', 'H': 'ℍ', 'I': '𝕀', 'J': '𝕁', 'K': '𝕂', 'L': '𝕃', 'M': '𝕄', 'N': 'ℕ', 'O': '𝕆', 'P': 'ℙ', 'Q': 'ℚ', 'R': 'ℝ', 'S': '𝕊', 'T': '𝕋', 'U': '𝕌', 'V': '𝕍', 'W': '𝕎', 'X': '𝕏', 'Y': '𝕐', 'Z': 'ℤ',
+                'a': '𝕒', 'b': '𝕓', 'c': '𝕔', 'd': '𝕕', 'e': '𝕖', 'f': '𝕗', 'g': '𝕘', 'h': '𝕙', 'i': '𝕚', 'j': '𝕛', 'k': '𝕜', 'l': '𝕝', 'm': '𝕞', 'n': '𝕟', 'o': '𝕠', 'p': '𝕡', 'q': '𝕢', 'r': '𝕣', 's': '𝕤', 't': '𝕥', 'u': '𝕦', 'v': '𝕧', 'w': '𝕨', 'x': '𝕩', 'y': '𝕪', 'z': '𝕫',
+                '0': '𝟘', '1': '𝟙', '2': '𝟚', '3': '𝟛', '4': '𝟜', '5': '𝟝', '6': '𝟞', '7': '𝟟', '8': '𝟠', '9': '𝟡'
+            },
+            'bubble': {
+                'A': 'Ⓐ', 'B': 'Ⓑ', 'C': 'Ⓒ', 'D': 'Ⓓ', 'E': 'Ⓔ', 'F': 'Ⓕ', 'G': 'Ⓖ', 'H': 'Ⓗ', 'I': 'Ⓘ', 'J': 'Ⓙ', 'K': 'Ⓚ', 'L': 'Ⓛ', 'M': 'Ⓜ', 'N': 'Ⓝ', 'O': 'Ⓞ', 'P': 'Ⓟ', 'Q': 'Ⓠ', 'R': 'Ⓡ', 'S': 'Ⓢ', 'T': 'Ⓣ', 'U': 'Ⓤ', 'V': 'Ⓥ', 'W': 'Ⓦ', 'X': 'Ⓧ', 'Y': 'Ⓨ', 'Z': 'Ⓩ',
+                'a': 'ⓐ', 'b': 'ⓑ', 'c': 'ⓒ', 'd': 'ⓓ', 'e': 'ⓔ', 'f': 'ⓕ', 'g': 'ⓖ', 'h': 'ⓗ', 'i': 'ⓘ', 'j': 'ⓙ', 'k': 'ⓚ', 'l': 'ⓛ', 'm': 'ⓜ', 'n': 'ⓝ', 'o': 'ⓞ', 'p': 'ⓟ', 'q': 'ⓠ', 'r': 'ⓡ', 's': 'ⓢ', 't': 'ⓣ', 'u': 'ⓤ', 'v': 'ⓥ', 'w': 'ⓦ', 'x': 'ⓧ', 'y': 'ⓨ', 'z': 'ⓩ',
+                '0': '⓪', '1': '①', '2': '②', '3': '③', '4': '④', '5': '⑤', '6': '⑥', '7': '⑦', '8': '⑧', '9': '⑨'
+            },
+            'squaredDark': {
+                'A': '🄰', 'B': '🄱', 'C': '🄲', 'D': '🄳', 'E': '🄴', 'F': '🄵', 'G': '🄶', 'H': '🄷', 'I': '🄸', 'J': '🄹', 'K': '🄺', 'L': '🄻', 'M': '🄼', 'N': '🄽', 'O': '🄾', 'P': '🄿', 'Q': '🅀', 'R': '🅁', 'S': '🅂', 'T': '🅃', 'U': '🅄', 'V': '🅅', 'W': '🅆', 'X': '🅇', 'Y': '🅈', 'Z': '🅉'
+            },
+            'squaredLight': {
+                'A': '🅰', 'B': '🅱', 'C': '🅲', 'D': '🅳', 'E': '🅴', 'F': '🅵', 'G': '🅶', 'H': '🅷', 'I': '🅸', 'J': 'J', 'K': '🅺', 'L': '🅻', 'M': '🅼', 'N': '🅽', 'O': '🅾', 'P': '🅿', 'Q': '🆀', 'R': '🆁', 'S': '🆂', 'T': '🆃', 'U': '🆄', 'V': '🆅', 'W': '🆆', 'X': '🆇', 'Y': '🆈', 'Z': '🆉'
+            }
+        };
+
+        // Style names for display
+        const styleNames = {
+            'bold': 'Bold',
+            'italic': 'Italic',
+            'boldItalic': 'Bold Italic',
+            'script': 'Script',
+            'fraktur': 'Fraktur (Old English)',
+            'monospace': 'Monospace',
+            'doublestruck': 'Double-Struck',
+            'bubble': 'Bubble Text',
+            'squaredDark': 'Squared (Dark)',
+            'squaredLight': 'Squared (Light)'
+        };
+
+        // --- App Logic ---
+        
+        const textInput = document.getElementById('text-input');
+        const outputContainer = document.getElementById('output-container');
+        const copyToast = document.getElementById('copy-toast');
+        let toastTimer;
+
+        // NEW: Modal DOM Elements
+        const creditModal = document.getElementById('credit-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const showCreditsBtn = document.getElementById('show-credits-btn');
+
+        // Function to convert text
+        function convertText(text, style) {
+            const map = fontMaps[style];
+            if (!map) return text;
+
+            // --- MODIFICATION ---
+            // For squared styles, convert all input text to uppercase first
+            // because these styles only map uppercase characters.
+            if (style === 'squaredDark' || style === 'squaredLight') {
+                text = text.toUpperCase();
+            }
+            // --- END MODIFICATION ---
+
+            let converted = '';
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                // Use mapped char or original if no mapping exists
+                converted += map[char] || char; 
+            }
+            return converted;
+        }
+
+        // Function to update all style outputs
+        function updateStyles() {
+            const text = textInput.value;
+            outputContainer.innerHTML = ''; // Clear previous output
+
+            if (text.trim() === '') {
+                outputContainer.innerHTML = '<p class="text-gray-400">Your generated font styles will appear here...</p>';
+                return;
+            }
+
+            for (const styleKey in styleNames) {
+                const converted = convertText(text, styleKey);
+                const styleName = styleNames[styleKey];
+                
+                // --- MODIFICATION ---
+                // Convert the title itself using the modified convertText.
+                // The special case 'if' block is no longer needed as the 
+                // new logic handles converting the title to uppercase for the squared styles.
+                const convertedStyleName = convertText(styleName, styleKey);
+                // --- END MODIFICATION ---
+
+                // Create the card for this style
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 border border-gray-200 rounded-lg p-4 transition-all duration-200 hover:shadow-md';
+                
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex-1 min-w-0">
+                            <!-- Use the converted name and new 'style-title' class -->
+                            <span class="style-title">${convertedStyleName}</span>
+                            
+                            <!-- Added mt-2 for better spacing -->
+                            <p class="generated-text text-gray-700 mt-2">${converted}</p>
+                        </div>
+                        <button 
+                            class="copy-btn mt-3 sm:mt-0 sm:ml-4 flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-150 ease-in-out self-start sm:self-center"
+                            data-text-to-copy="${converted}"
+                        >
+                            Copy
+                        </button>
+                    </div>
+                `;
+                outputContainer.appendChild(card);
+            }
+        }
+
+        // Function to copy text to clipboard
+        // Uses document.execCommand for broad compatibility in iFrames
+        function copyToClipboard(text) {
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                // In a real app, you might show an error toast here
+            }
+            document.body.removeChild(tempTextArea);
+        }
+
+        // Function to show the "Copied!" toast
+        function showToast() {
+            clearTimeout(toastTimer); // Clear any existing timer
+            copyToast.classList.add('show');
+            toastTimer = setTimeout(() => {
+                copyToast.classList.remove('show');
+            }, 2000); // Hide after 2 seconds
+        }
+
+        // --- Event Listeners ---
+
+        // Update styles on input
+        textInput.addEventListener('input', updateStyles);
+
+        // Event delegation for copy buttons
+        outputContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('copy-btn')) {
+                const textToCopy = e.target.getAttribute('data-text-to-copy');
+                copyToClipboard(textToCopy);
+            }
+        });
+
+        // NEW: Modal Listeners
+        showCreditsBtn.addEventListener('click', () => {
+            creditModal.classList.remove('hidden');
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            creditModal.classList.add('hidden');
+        });
+
+        // Optional: Close modal if clicking on the background overlay
+        creditModal.addEventListener('click', (e) => {
+            // Check if the click is on the overlay itself, not the modal content
+            if (e.target.id === 'credit-modal') {
+                creditModal.classList.add('hidden');
+            }
+        });
+
+        // Initial call to populate (in case of refresh with text)
+        updateStyles();
+    </script>
+</body>
+</html>
+
+
