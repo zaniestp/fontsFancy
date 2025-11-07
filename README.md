@@ -3,9 +3,6 @@
 This is a Powershell app that runs on Windows without installation
 
 ****************************************************
-You may copy the entire folder (Counter) to use.
-
-*********************************************************
 ```text
       /\_/\
      ( >.< )   Meow!
