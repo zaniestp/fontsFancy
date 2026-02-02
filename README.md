@@ -1,6 +1,7 @@
 # fontsFancy
 
-This is a Powershell app that runs on Windows without installation
+## https://zaniestp.github.io/fontsFancy/
+This is a html app that runs on a browser
 
 ****************************************************
 ```text
